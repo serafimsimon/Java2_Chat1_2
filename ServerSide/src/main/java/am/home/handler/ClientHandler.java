@@ -28,6 +28,7 @@ public class ClientHandler {
                 try {
                     authentication();
                     receive();
+                    Thread.sleep(120000);
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
