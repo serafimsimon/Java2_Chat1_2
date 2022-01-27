@@ -1,12 +1,14 @@
 package am.home.handler;
 
 import am.home.service.MyServer;
+import com.sun.istack.internal.Nullable;
 
 import javax.swing.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.TimerTask;
 
 public class ClientHandler {
     private MyServer myServer;
@@ -24,6 +26,8 @@ public class ClientHandler {
             this.dis = new DataInputStream(socket.getInputStream());
             this.dos = new DataOutputStream(socket.getOutputStream());
             this.nickName = "";
+            long start = System.currentTimeMillis();
+
             new Thread(() -> {
                 try {
                     authentication();
@@ -31,9 +35,17 @@ public class ClientHandler {
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
+                    myServer.sendMessageToClients(nickName + " покинул(а) чат");
                     closeConnection();
                 }
             }).start();
+
+            while(!Thread.currentThread().isInterrupted()) {
+                long finish = System.currentTimeMillis();
+                if((finish - start) >= 120000 && this.nickName.isEmpty() || this.nickName == null) {
+                    closeConnection();
+                }
+            }
 
         } catch (Exception e) {
             throw new RuntimeException("Проблемы при создании обработчика клиента");
@@ -42,7 +54,7 @@ public class ClientHandler {
 
     private void closeConnection() {
         myServer.unsubscribe(this);
-        myServer.sendMessageToClients(nickName + " покинул(а) чат");
+
         try {
             dis.close();
         } catch (IOException e) {
@@ -63,6 +75,7 @@ public class ClientHandler {
     public void authentication() throws Exception {
 
         while (true) {
+
             String message = dis.readUTF();
             if (message.startsWith("/start")) {
                 String[] arr = message.split("-", 3);
@@ -85,10 +98,12 @@ public class ClientHandler {
                     }
                 } else {
                     send("Неверный логин и/или пароль");
+
                 }
             }
         }
     }
+
 
     public void send(String message) {
         try {
@@ -106,21 +121,21 @@ public class ClientHandler {
                     myServer.sendMessageToClients(nickName + " вышел из чата");
                     return;
                 }
-                if(message.startsWith("/w")) {
-                String to = message.split("-", 3)[1];
-                String msg = message.split("-", 3)[2];
-                myServer.sendMessageToClient(this, to, msg);
+                if (message.startsWith("/w")) {
+                    String to = message.split("-", 3)[1];
+                    String msg = message.split("-", 3)[2];
+                    myServer.sendMessageToClient(this, to, msg);
                 }
-                if(message.startsWith("/list")){
+                if (message.startsWith("/list")) {
                     myServer.onLineUsers(this);
                 }
                 continue;
             }
-                myServer.sendMessageToClients(nickName + ": " + message);
-            }
-        }
-
-        public String getNickName () {
-            return nickName;
+            myServer.sendMessageToClients(nickName + ": " + message);
         }
     }
+
+    public String getNickName() {
+        return nickName;
+    }
+}
