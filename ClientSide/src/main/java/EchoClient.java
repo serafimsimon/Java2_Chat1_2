@@ -4,14 +4,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class EchoClient extends JFrame {
     private final String SERVER_ADDRESS = "127.0.0.1";
-    private final int SERVER_PORT = 8880;
+    private final int SERVER_PORT = 8881;
     private DataInputStream dis;
     private DataOutputStream dos;
 
@@ -31,13 +30,20 @@ public class EchoClient extends JFrame {
         dos = new DataOutputStream(socket.getOutputStream());
 
         Thread thread = new Thread(() -> {
+
                  try {
+
                     while (true) {
                         String fromServer = dis.readUTF();
+
                         if (fromServer.startsWith("/start")) {
+
+                            DataInputStream input = new DataInputStream(new FileInputStream("logo1.txt"));
+
                             chatArea.append(fromServer + "\n");
                             break;
                         }
+
                         chatArea.append(fromServer + "\n");
                     }
 
@@ -59,14 +65,17 @@ public class EchoClient extends JFrame {
     private void sendMessageToServer() {
 
         String msg = msgInputField.getText();
+        byte[] file = msg.getBytes();
 
         if (msg != null && !msg.trim().isEmpty()) {
             try {
-
                 dos.writeUTF(msg.toString());
+                /*Запись локальной истории в текстовый файл*/
+                FileOutputStream outfile = new FileOutputStream("logo1.txt", true);
+                DataOutputStream out = new DataOutputStream(outfile);
+                out.write(file);
                 msgInputField.setText("");
                 msgInputField.grabFocus();
-
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -74,6 +83,7 @@ public class EchoClient extends JFrame {
             }
         }
     }
+
 
     private void closeConnection() {
         try {
@@ -95,7 +105,7 @@ public class EchoClient extends JFrame {
         }
     }
 
-    public void prepareGUI() {
+    public void prepareGUI() throws IOException {
         // Параметры окна
         setBounds(600, 300, 500, 500);
         setTitle("Клиент");
@@ -107,6 +117,7 @@ public class EchoClient extends JFrame {
         chatArea.setLineWrap(true);
         add(new JScrollPane(chatArea), BorderLayout.CENTER);
 
+
         // Нижняя панель с полем для ввода сообщений и кнопкой отправки сообщений
         JPanel bottomPanel = new JPanel(new BorderLayout());
         JButton btnSendMsg = new JButton("Отправить");
@@ -116,14 +127,20 @@ public class EchoClient extends JFrame {
         bottomPanel.add(msgInputField, BorderLayout.CENTER);
         btnSendMsg.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {sendMessageToServer();}
+            public void actionPerformed(ActionEvent e) {
+
+                    sendMessageToServer();
+
+                }
+
         });
         msgInputField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                sendMessageToServer();
-            }
+
+                    sendMessageToServer();}
+
         });
 
         // Настраиваем действие на закрытие окна
