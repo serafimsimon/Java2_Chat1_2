@@ -6,7 +6,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class EchoClient extends JFrame {
     private final String SERVER_ADDRESS = "127.0.0.1";
@@ -22,45 +24,47 @@ public class EchoClient extends JFrame {
     public EchoClient() throws IOException {
         connectionToServer();
         prepareGUI();
+        loadHistory();
     }
 
-    private void connectionToServer() throws IOException {
+    public void connectionToServer() throws IOException {
         socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
         dis = new DataInputStream(socket.getInputStream());
         dos = new DataOutputStream(socket.getOutputStream());
 
+
         Thread thread = new Thread(() -> {
 
-                 try {
+            try {
 
-                    while (true) {
-                        String fromServer = dis.readUTF();
+                while (true) {
+                    String fromServer = dis.readUTF();
 
-                        if (fromServer.startsWith("/start")) {
-
-                            DataInputStream input = new DataInputStream(new FileInputStream("logo1.txt"));
-
-                            chatArea.append(fromServer + "\n");
-                            break;
-                        }
+                    if (fromServer.startsWith("/start")) {
 
                         chatArea.append(fromServer + "\n");
+                        break;
                     }
+                    chatArea.append(fromServer + "\n");
+                }
 
-                    while (true) {
-                        String fromServer = dis.readUTF();
-                        if (fromServer.equalsIgnoreCase("/finish")) {
-                            break;
-                        }
-                        chatArea.append(fromServer + "\n");
+                while (true) {
+                    String fromServer = dis.readUTF();
+                    if (fromServer.equalsIgnoreCase("/finish")) {
+                        break;
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(null, "Потеряно соединение с сревером!");
-                }});
+                    chatArea.append(fromServer + "\n");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Потеряно соединение с сревером!");
+            }
+
+        });
         thread.setDaemon(true);
         thread.start();
     }
+
 
     private void sendMessageToServer() {
 
@@ -69,11 +73,11 @@ public class EchoClient extends JFrame {
 
         if (msg != null && !msg.trim().isEmpty()) {
             try {
-                dos.writeUTF(msg.toString());
-                /*Запись локальной истории в текстовый файл*/
+                dos.writeUTF(msg);
+/*Запись локальной истории в текстовый файл*/
                 FileOutputStream outfile = new FileOutputStream("logo1.txt", true);
                 DataOutputStream out = new DataOutputStream(outfile);
-                out.write(file);
+                out.writeUTF(msg + "\n");
                 msgInputField.setText("");
                 msgInputField.grabFocus();
 
@@ -104,8 +108,26 @@ public class EchoClient extends JFrame {
             e.printStackTrace();
         }
     }
+ /*Метод, выводящий 100 последних строчек чата после загрузки клиента*/
+    public void loadHistory() {
 
-    public void prepareGUI() throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader("logo1.txt"))) {
+            String line;
+            int k = 0;
+            List<String> Lines = new ArrayList<>();
+
+            while ((line = reader.readLine()) != null) {
+                Lines.add(reader.readLine());
+            }
+            System.out.println(Lines.size());
+            chatArea.append(String.valueOf(Lines.subList(Lines.size() - 100, Lines.size())));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void prepareGUI() {
         // Параметры окна
         setBounds(600, 300, 500, 500);
         setTitle("Клиент");
@@ -129,17 +151,17 @@ public class EchoClient extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                    sendMessageToServer();
+                sendMessageToServer();
 
-                }
+            }
 
         });
         msgInputField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-
-                    sendMessageToServer();}
+                sendMessageToServer();
+            }
 
         });
 
