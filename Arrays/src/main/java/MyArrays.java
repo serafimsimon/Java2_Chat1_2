@@ -1,19 +1,9 @@
 import java.util.ArrayList;
 
-public class Arrays {
+public class MyArrays {
 
 
     public static void main(String[] args) {
-
-        int[] intArray1 = {0, 1, 2, 4, 6, 7, 4, 8};
-        int[] intArray2 = {4, 3, 1, 2, 5, 6, 7, 4};
-        int[] intArray3 = {4, 4, 4, 7, 4};
-
-        int[] boolArray1 = {1, 1, 1, 4, 4, 1, 4, 4};
-        int[] boolArray2 = {1, 1, 1, 1, 1, 1};
-        int[] boolArray3 = {4, 4, 4, 4};
-        int[] boolArray4 = {1, 4, 4, 1, 1, 4, 3};
-
 
     }
 
@@ -38,7 +28,7 @@ public class Arrays {
         return List;
     }
 
-    public static boolean fourOrOne(int[] inputArray) {
+    public boolean fourOrOne(int[] inputArray) {
 
         int count4 = 0;
         int count1 = 0;

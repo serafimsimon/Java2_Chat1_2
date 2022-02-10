@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -11,15 +12,21 @@ import java.util.List;
 import java.util.stream.Stream;
 
 class ArraysTest {
-    private ArraysTest arraysTest;
+
+    private MyArrays myArrays;
+
+    @BeforeEach
+    public void init() {
+        myArrays = new MyArrays();
+    }
 
 
     @ParameterizedTest
     @MethodSource("dataForArrays")
-    public void arraysCompare(ArrayList<Integer> result, int[] intArray) {
+    public void testArraysCompare(ArrayList<Integer> result, int[] intArray) {
 
 
-        Assertions.assertArrayEquals(result, arraysTest.arraysCompare(intArray));}
+        Assertions.assertEquals(result, myArrays.arraysCompare(intArray));}
 
     public static Stream<Arguments> dataForArrays() {
         List<Arguments> out = new ArrayList<>();
@@ -29,11 +36,19 @@ class ArraysTest {
         return out.stream();}
 
 
+    @ParameterizedTest
+    @MethodSource("dataForNumbers")
+    void testFourOrOne(boolean result, int[] inputArray) {
 
+        Assertions.assertEquals(result, myArrays.fourOrOne(inputArray));
+    }
 
-
-
-    @Test
-    void fourOrOne() {
+    public static Stream<Arguments> dataForNumbers() {
+        List<Arguments> out = new ArrayList<>();
+        out.add(Arguments.arguments(true, new int[] {1, 1, 1, 4, 4, 1, 4, 4}));
+        out.add(Arguments.arguments(false, new int[] {1, 1, 1, 1, 1, 1}));
+        out.add(Arguments.arguments(false, new int[] {4, 4, 4, 4}));
+        out.add(Arguments.arguments(false, new int[] {1, 4, 4, 1, 1, 4, 3}));
+        return out.stream();
     }
 }
