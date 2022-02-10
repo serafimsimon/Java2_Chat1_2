@@ -4,14 +4,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class EchoClient extends JFrame {
     private final String SERVER_ADDRESS = "127.0.0.1";
-    private final int SERVER_PORT = 8880;
+    private final int SERVER_PORT = 8881;
     private DataInputStream dis;
     private DataOutputStream dos;
 
@@ -23,50 +24,62 @@ public class EchoClient extends JFrame {
     public EchoClient() throws IOException {
         connectionToServer();
         prepareGUI();
+        loadHistory();
     }
 
-    private void connectionToServer() throws IOException {
+    public void connectionToServer() throws IOException {
         socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
         dis = new DataInputStream(socket.getInputStream());
         dos = new DataOutputStream(socket.getOutputStream());
 
-        Thread thread = new Thread(() -> {
-                 try {
-                    while (true) {
-                        String fromServer = dis.readUTF();
-                        if (fromServer.startsWith("/start")) {
-                            chatArea.append(fromServer + "\n");
-                            break;
-                        }
-                        chatArea.append(fromServer + "\n");
-                    }
 
-                    while (true) {
-                        String fromServer = dis.readUTF();
-                        if (fromServer.equalsIgnoreCase("/finish")) {
-                            break;
-                        }
+        Thread thread = new Thread(() -> {
+
+            try {
+
+                while (true) {
+                    String fromServer = dis.readUTF();
+
+                    if (fromServer.startsWith("/start")) {
+
                         chatArea.append(fromServer + "\n");
+                        break;
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(null, "Потеряно соединение с сревером!");
-                }});
+                    chatArea.append(fromServer + "\n");
+                }
+
+                while (true) {
+                    String fromServer = dis.readUTF();
+                    if (fromServer.equalsIgnoreCase("/finish")) {
+                        break;
+                    }
+                    chatArea.append(fromServer + "\n");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Потеряно соединение с сревером!");
+            }
+
+        });
         thread.setDaemon(true);
         thread.start();
     }
 
+
     private void sendMessageToServer() {
 
         String msg = msgInputField.getText();
+        byte[] file = msg.getBytes();
 
         if (msg != null && !msg.trim().isEmpty()) {
             try {
-
-                dos.writeUTF(msg.toString());
+                dos.writeUTF(msg);
+/*Запись локальной истории в текстовый файл*/
+                FileOutputStream outfile = new FileOutputStream("logo1.txt", true);
+                DataOutputStream out = new DataOutputStream(outfile);
+                out.writeUTF(msg + "\n");
                 msgInputField.setText("");
                 msgInputField.grabFocus();
-
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -74,6 +87,7 @@ public class EchoClient extends JFrame {
             }
         }
     }
+
 
     private void closeConnection() {
         try {
@@ -94,6 +108,24 @@ public class EchoClient extends JFrame {
             e.printStackTrace();
         }
     }
+ /*Метод, выводящий 100 последних строчек чата после загрузки клиента*/
+    public void loadHistory() {
+
+        try (BufferedReader reader = new BufferedReader(new FileReader("logo1.txt"))) {
+            String line;
+            int k = 0;
+            List<String> Lines = new ArrayList<>();
+
+            while ((line = reader.readLine()) != null) {
+                Lines.add(reader.readLine());
+            }
+            System.out.println(Lines.size());
+            chatArea.append(String.valueOf(Lines.subList(Lines.size() - 100, Lines.size())));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public void prepareGUI() {
         // Параметры окна
@@ -107,6 +139,7 @@ public class EchoClient extends JFrame {
         chatArea.setLineWrap(true);
         add(new JScrollPane(chatArea), BorderLayout.CENTER);
 
+
         // Нижняя панель с полем для ввода сообщений и кнопкой отправки сообщений
         JPanel bottomPanel = new JPanel(new BorderLayout());
         JButton btnSendMsg = new JButton("Отправить");
@@ -116,7 +149,12 @@ public class EchoClient extends JFrame {
         bottomPanel.add(msgInputField, BorderLayout.CENTER);
         btnSendMsg.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {sendMessageToServer();}
+            public void actionPerformed(ActionEvent e) {
+
+                sendMessageToServer();
+
+            }
+
         });
         msgInputField.addActionListener(new ActionListener() {
             @Override
@@ -124,6 +162,7 @@ public class EchoClient extends JFrame {
 
                 sendMessageToServer();
             }
+
         });
 
         // Настраиваем действие на закрытие окна

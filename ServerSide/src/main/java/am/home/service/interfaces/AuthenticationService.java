@@ -1,10 +1,11 @@
 package am.home.service.interfaces;
 
-public interface AuthenticationService {
-void start();
-void stop();
-String getNickNameByLoginPassword(String login, String password);
+import java.sql.SQLException;
 
+public interface AuthenticationService {
+    void start() throws SQLException;
+    void stop();
+    String getNickNameByLoginPassword(String login, String password);
 
 }
 
