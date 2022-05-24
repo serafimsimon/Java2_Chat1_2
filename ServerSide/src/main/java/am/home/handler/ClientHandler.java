@@ -4,11 +4,12 @@ import am.home.service.MyServer;
 import com.sun.istack.internal.Nullable;
 
 import javax.swing.*;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.util.TimerTask;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ClientHandler {
     private MyServer myServer;
@@ -26,9 +27,10 @@ public class ClientHandler {
             this.dis = new DataInputStream(socket.getInputStream());
             this.dos = new DataOutputStream(socket.getOutputStream());
             this.nickName = "";
-            long start = System.currentTimeMillis();
 
-            new Thread(() -> {
+            ExecutorService service = Executors.newFixedThreadPool(3);
+
+            service.execute(() -> {
                 try {
                     authentication();
                     receive();
@@ -38,14 +40,9 @@ public class ClientHandler {
                     myServer.sendMessageToClients(nickName + " покинул(а) чат");
                     closeConnection();
                 }
-            }).start();
+            });
 
-            while(!Thread.currentThread().isInterrupted()) {
-                long finish = System.currentTimeMillis();
-                if((finish - start) >= 120000 && this.nickName.isEmpty() || this.nickName == null) {
-                    closeConnection();
-                }
-            }
+            service.shutdown();
 
         } catch (Exception e) {
             throw new RuntimeException("Проблемы при создании обработчика клиента");
@@ -138,4 +135,5 @@ public class ClientHandler {
     public String getNickName() {
         return nickName;
     }
+
 }
